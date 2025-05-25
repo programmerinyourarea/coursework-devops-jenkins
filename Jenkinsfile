@@ -20,7 +20,7 @@ pipeline {
             steps {
                 dir("${env.WORKSPACE}") {
                     // Copy binary to target
-                    sh 'scp main laborant@target:/home/laborant/main'
+                    sh 'scp -o StrictHostKeyChecking=no main laborant@target:/home/laborant/main'
 
                     // Create and enable systemd service remotely
                     sh '''
