@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     TARGET_HOST = 'laborant@target'
-    DEPLOY_KEY_ID = 'jenkins-deploy-key' // ✅ Replace with your actual Jenkins credentials ID if different
+    DEPLOY_KEY_ID = 'jenkins-deploy-key' 
   }
 
   stages {
