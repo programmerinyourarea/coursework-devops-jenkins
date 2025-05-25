@@ -23,7 +23,7 @@ pipeline {
 
         stage('Deploy Binary') {
             steps {
-                sshagent(['70653f76-7f59-457b-b04e-db2244138e10']) {
+                sshagent(['deploy_id']) {
                     sh 'scp -o StrictHostKeyChecking=no main ${TARGET_HOST}:${DEPLOY_PATH}'
                 }
             }
@@ -31,7 +31,7 @@ pipeline {
 
         stage('Setup systemd Service') {
             steps {
-                sshagent(['70653f76-7f59-457b-b04e-db2244138e10']) {
+                sshagent(['deploy_id']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no $TARGET_HOST 'bash -s' <<'ENDSSH'
                         echo "[Unit]
