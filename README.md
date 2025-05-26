@@ -1,19 +1,19 @@
 # coursework-devops-jenkins
-## Step by Step
+# Infra Config
 ### Create SSH key on Jenkins Machine
 	ssh-keygen -t ed25519 -f ~/.ssh/id_deploy -C "jenkins-deploy-key"
 
-### Move it from Jenkins Machine To Target Machine:
-	scp ~/.ssh/id_deploy.pub laborant@target:/home/laborant/authorized_keys.tmp
+### Move it from Jenkins Machine To docker Machine:
+	scp ~/.ssh/id_deploy.pub laborant@docker:/home/laborant/authorized_keys.tmp
 
-### Finishing Moving (On Target Machine):
+### Finishing Moving (On Docker Machine):
     sudo mv /home/laborant/authorized_keys.tmp /home/laborant/.ssh/authorized_keys
 
 	sudo chown laborant:laborant /home/laborant/.ssh/authorized_keys
 
 	chmod 600 /home/laborant/.ssh/authorized_keys
 ### Check That Everything Works:
-    ssh -i ~/.ssh/id_deploy laborant@target
+    ssh -i ~/.ssh/id_deploy laborant@docker
 ### Get jenkins password:
     sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ### Login into Jenkis:
@@ -24,8 +24,13 @@
 ### Add Credentials in Jenkins:
 	Jenkins->Manage Jenkins->Credentials->(global)->add credentials
 
-    ID: deploy_id
+    ID: docker_deploy
     username: laborant(or whatever you use)
     private key from cat ~/.ssh/id_deploy from Jenkins Machine.
 ### Install SSH Agent plugin in Jenkins:
-    jenkins->Manage Jenkins->Plugins->SSH Agent
+    jenkins->Manage Jenkins->Plugins->SSH Agent && Docker Pipeline
+
+# Create Jenkins Pipeline
+    Create Jenkins Pipeline -> GitHub Project
+    Pipeline Script from SCM -> Git -> repo -> branch
+    Save -> Build
