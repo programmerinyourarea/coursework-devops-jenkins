@@ -4,8 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-# Disable Go modules and build with GOPATH mode
-RUN GO111MODULE=off go build -o main main.go
+RUN GO111MODULE=off go build -o main
 
 FROM alpine:latest
 
