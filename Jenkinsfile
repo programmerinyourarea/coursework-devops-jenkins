@@ -31,7 +31,7 @@ pipeline {
 
         stage('Deploy to Docker VM') {
             steps {
-                sshagent(['deploy_id']) {
+                sshagent(['docker_deploy']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${TARGET_HOST} '
                         docker pull ${DOCKER_IMAGE} &&
