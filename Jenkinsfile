@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        TARGET_HOST = "laborant@target"
-        DEPLOY_PATH = "/home/laborant/main"
+        TARGET_HOST = "laborant@docker"
+        DOCKER_IMAGE = "ttl.sh/programmerinyourarea/myapp:2h"
+        SSH_CREDENTIALS_ID = 'docker_deploy'
     }
 
     stages {
@@ -13,7 +14,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Binary') {
             steps {
                 dir('app') {
                     sh 'go build -o ../main main.go'
@@ -21,38 +22,33 @@ pipeline {
             }
         }
 
-        stage('Deploy Binary') {
+        stage('Build Docker Image') {
             steps {
-                sshagent(['deploy_id']) {
-                    sh 'scp -o StrictHostKeyChecking=no main ${TARGET_HOST}:${DEPLOY_PATH}'
-                }
+                sh """
+                docker build -t ${DOCKER_IMAGE} .
+                """
             }
         }
 
-        stage('Setup systemd Service') {
+        stage('Push Docker Image') {
             steps {
-                sshagent(['deploy_id']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no $TARGET_HOST 'bash -s' <<'ENDSSH'
-                        echo "[Unit]
-Description=My Go App
+                sh """
+                docker push ${DOCKER_IMAGE}
+                """
+            }
+        }
 
-[Service]
-ExecStart=/home/laborant/main
-Restart=always
-User=laborant
-
-[Install]
-WantedBy=multi-user.target" > myapp.service
-
-                        sudo mv myapp.service /etc/systemd/system/myapp.service
-                        sudo chown root:root /etc/systemd/system/myapp.service
-                        sudo systemctl daemon-reexec
-                        sudo systemctl daemon-reload
-                        sudo systemctl enable myapp
-                        sudo systemctl restart myapp
-                        ENDSSH
-                    '''
+        stage('Deploy to Docker VM') {
+            steps {
+                sshagent([SSH_CREDENTIALS_ID]) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${TARGET_HOST} '
+                        docker pull ${DOCKER_IMAGE} &&
+                        docker stop myapp || true &&
+                        docker rm myapp || true &&
+                        docker run -d --name myapp -p 4444:4444 ${DOCKER_IMAGE}
+                    '
+                    """
                 }
             }
         }
