@@ -15,12 +15,14 @@ pipeline {
         }
 
         stage('Build Binary') {
-            steps {
-                dir('app') {
-                    sh 'go build -o ../main main.go'
-                }
+    steps {
+        dir('app') {
+            docker.image('golang:1.20-alpine').inside {
+                sh 'go build -o ../main main.go'
             }
         }
+    }
+}
 
         stage('Build Docker Image') {
             steps {
