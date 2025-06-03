@@ -3,16 +3,13 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "ttl.sh/programmerinyourarea/myapp:2h"
-        K8S_API = 'https://k8s:6443'
-        K8S_TOKEN = credentials('k8s-token') // Store your service account token in Jenkins
-        NAMESPACE = 'default'
-        POD_NAME = 'myapp'
+        KUBECONFIG_PATH = "/var/lib/jenkins/.kube/config"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'kubernetes', url: 'https://github.com/programmerinyourarea/coursework-devops-jenkins'
             }
         }
 
@@ -29,60 +26,62 @@ pipeline {
         }
 
         stage('Configure kubectl') {
+            environment {
+                K8S_SERVER = "https://k8s:6443"
+            }
             steps {
-                sh '''
-  mkdir -p /var/lib/jenkins/.kube
-  cat > /var/lib/jenkins/.kube/config <<EOF
+                withCredentials([string(credentialsId: 'k8s-token', variable: 'K8S_TOKEN')]) {
+                    sh '''
+                        mkdir -p $(dirname ${KUBECONFIG_PATH})
+                        cat <<EOF > ${KUBECONFIG_PATH}
 apiVersion: v1
 kind: Config
 clusters:
-- cluster:
-    server: https://k8s:6443
+- name: k8s
+  cluster:
+    server: ${K8S_SERVER}
     insecure-skip-tls-verify: true
-  name: k8s
 contexts:
-- context:
+- name: k8s-context
+  context:
     cluster: k8s
-    user: sa
-  name: sa-context
-current-context: sa-context
+    user: jenkins
+current-context: k8s-context
 users:
-- name: sa
+- name: jenkins
   user:
     token: ${K8S_TOKEN}
 EOF
-'''
-
+                    '''
+                }
+            }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh """
-                    kubectl delete pod ${POD_NAME} --ignore-not-found=true -n ${NAMESPACE}
+                sh '''
+                    kubectl --kubeconfig=${KUBECONFIG_PATH} delete pod myapp --ignore-not-found=true -n default
 
-                    cat <<EOF | kubectl apply -f -
-                    apiVersion: v1
-                    kind: Pod
-                    metadata:
-                      name: ${POD_NAME}
-                      namespace: ${NAMESPACE}
-                    spec:
-                      containers:
-                      - name: ${POD_NAME}-container
-                        image: ${DOCKER_IMAGE}
-                        ports:
-                        - containerPort: 4444
-                        imagePullPolicy: Always
-                    EOF
-                    """
-                }
+                    cat <<EOF | kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  containers:
+  - name: myapp
+    image: ${DOCKER_IMAGE}
+    ports:
+    - containerPort: 8080
+EOF
+                '''
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                sh "kubectl get pod ${POD_NAME} -n ${NAMESPACE} -o wide"
+                sh 'kubectl --kubeconfig=${KUBECONFIG_PATH} get pods -n default'
             }
         }
     }
