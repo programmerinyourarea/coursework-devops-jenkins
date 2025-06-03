@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "ttl.sh/programmerinyourarea/myapp:2h"
-        TARGET_HOST = "laborant@docker"
+        TARGET_HOST  = "ubuntu@ec2-13-48-1-54.eu-north-1.compute.amazonaws.com"
     }
 
     stages {
@@ -34,9 +34,10 @@ pipeline {
                 sshagent(['docker_deploy']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${TARGET_HOST} '
-                        docker pull ${DOCKER_IMAGE} &&
-                        docker stop myapp || true &&
-                        docker rm myapp || true &&
+                        set -e
+                        docker pull ${DOCKER_IMAGE}
+                        docker stop myapp || true
+                        docker rm myapp || true
                         docker run -d -p 4444:4444 --name myapp ${DOCKER_IMAGE}
                     '
                     """
