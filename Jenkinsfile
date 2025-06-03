@@ -31,30 +31,28 @@ pipeline {
         stage('Configure kubectl') {
             steps {
                 sh '''
-                mkdir -p $HOME/.kube
+  mkdir -p /var/lib/jenkins/.kube
+  cat > /var/lib/jenkins/.kube/config <<EOF
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://k8s:6443
+    insecure-skip-tls-verify: true
+  name: k8s
+contexts:
+- context:
+    cluster: k8s
+    user: sa
+  name: sa-context
+current-context: sa-context
+users:
+- name: sa
+  user:
+    token: ${K8S_TOKEN}
+EOF
+'''
 
-                cat <<EOF > $HOME/.kube/config
-                apiVersion: v1
-                kind: Config
-                clusters:
-                - cluster:
-                    server: ${K8S_API}
-                    insecure-skip-tls-verify: true
-                  name: my-cluster
-                contexts:
-                - context:
-                    cluster: my-cluster
-                    user: jenkins
-                    namespace: ${NAMESPACE}
-                  name: jenkins-context
-                current-context: jenkins-context
-                users:
-                - name: jenkins
-                  user:
-                    token: ${K8S_TOKEN}
-                EOF
-                '''
-            }
         }
 
         stage('Deploy to Kubernetes') {
