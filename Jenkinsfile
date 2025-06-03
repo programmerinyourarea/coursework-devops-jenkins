@@ -31,7 +31,7 @@ pipeline {
 
         stage('Deploy to Docker VM') {
             steps {
-                sshagent(['docker_deploy']) {
+                sshagent(['id_deploy']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${TARGET_HOST} '
                         set -e
